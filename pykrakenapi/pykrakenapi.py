@@ -53,7 +53,7 @@ def crl_sleep(func):
                 result = func(*args, **kwargs)
                 return result
             except CallRateLimitError as err:
-                print(err, '\n sleeping for {} seconds'.format(crl_sleep))
+                print(err, "\n sleeping for {} seconds".format(crl_sleep))
                 time.sleep(crl_sleep)
                 continue
 
@@ -76,7 +76,7 @@ def callratelimiter(query_type):
             self = args[0]
 
             # public API, with an independent counter system
-            if query_type == 'public':
+            if query_type == "public":
                 if self.time_of_last_public_query is not None:
                     now = datetime.datetime.now()
                     lapse = (now - self.time_of_last_public_query).total_seconds()
@@ -100,8 +100,7 @@ def callratelimiter(query_type):
                             result = func(*args, **kwargs)
                             return result
                         except (HTTPError, KrakenAPIError) as err:
-                            print('attempt: {} |'.format(
-                                str(attempt).zfill(3)), err)
+                            print("attempt: {} |".format(str(attempt).zfill(3)), err)
                             attempt += 1
                             time.sleep(retry)
                             now = datetime.datetime.now()
@@ -109,9 +108,9 @@ def callratelimiter(query_type):
                             continue
 
             # private API, determine increment
-            if query_type == 'ledger/trade history':
+            if query_type == "ledger/trade history":
                 incr = 2
-            elif query_type == 'other':
+            elif query_type == "other":
                 incr = 1
 
             # decrease api counter
@@ -133,20 +132,19 @@ def callratelimiter(query_type):
                             result = func(*args, **kwargs)
                             return result
                         except (HTTPError, KrakenAPIError) as err:
-                            print('attempt: {} |'.format(
-                                str(attempt).zfill(3)), err)
+                            print("attempt: {} |".format(str(attempt).zfill(3)), err)
                             attempt += 1
                             time.sleep(self.retry)
                             self._decrease_api_counter()
                             continue
 
             # raise error if limit exceeded
-            msg = ("call rate limiter exceeded (counter={}, limit={})")
-            msg = msg.format(str(self.api_counter).zfill(2),
-                             str(self.limit).zfill(2))
+            msg = "call rate limiter exceeded (counter={}, limit={})"
+            msg = msg.format(str(self.api_counter).zfill(2), str(self.limit).zfill(2))
             raise CallRateLimitError(msg)
 
         return wrapper
+
     return decorate_func
 
 
@@ -198,7 +196,7 @@ class KrakenAPI(object):
 
     """
 
-    def __init__(self, api, tier='Intermediate', retry=1, crl_sleep=5):
+    def __init__(self, api, tier="Intermediate", retry=1, crl_sleep=5):
 
         self.api = api
 
@@ -208,19 +206,19 @@ class KrakenAPI(object):
 
         self.api_counter = 0
 
-        if tier == 'None':
-            self.limit = float('inf')
+        if tier == "None":
+            self.limit = float("inf")
             self.factor = 3  # does not matter
 
-        elif tier == 'Starter':
+        elif tier == "Starter":
             self.limit = 15
             self.factor = 3  # down by 1 every three seconds
 
-        elif tier == 'Intermediate':
+        elif tier == "Intermediate":
             self.limit = 20
             self.factor = 2  # down by 1 every two seconds
 
-        elif tier == 'Pro':
+        elif tier == "Pro":
             self.limit = 20
             self.factor = 1  # down by 1 every one second
 
@@ -229,7 +227,7 @@ class KrakenAPI(object):
         self.crl_sleep = crl_sleep
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_server_time(self):
         """Get server time.
 
@@ -257,20 +255,20 @@ class KrakenAPI(object):
         """
 
         # query
-        res = self.api.query_public('Time')
+        res = self.api.query_public("Time")
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # extract results
-        dt = pd.to_datetime(res['result']['rfc1123'])
-        unixtime = res['result']['unixtime']
+        dt = pd.to_datetime(res["result"]["rfc1123"])
+        unixtime = res["result"]["unixtime"]
 
         return dt, unixtime
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_system_status(self):
         """Get system status.
 
@@ -306,20 +304,20 @@ class KrakenAPI(object):
         """
 
         # query
-        res = self.api.query_public('SystemStatus')
+        res = self.api.query_public("SystemStatus")
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # extract results
-        status = res['result']['status']
-        timestamp = pd.to_datetime(res['result']['timestamp'])
+        status = res["result"]["status"]
+        timestamp = pd.to_datetime(res["result"]["timestamp"])
 
         return status, timestamp
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_asset_info(self, info=None, aclass=None, asset=None):
         """Get asset info.
 
@@ -360,23 +358,26 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('Assets', data=data)
+        res = self.api.query_public("Assets", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        assets = pd.DataFrame(res['result']).T
+        assets = pd.DataFrame(res["result"]).T
 
         return assets
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_tradable_asset_pairs(self, info=None, pair=None):
         """Get tradable asset pairs.
 
@@ -435,23 +436,26 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('AssetPairs', data=data)
+        res = self.api.query_public("AssetPairs", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        pairs = pd.DataFrame(res['result']).T
+        pairs = pd.DataFrame(res["result"]).T
 
         return pairs
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_ticker_information(self, pair):
         """Get ticker information.
 
@@ -494,23 +498,26 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('Ticker', data=data)
+        res = self.api.query_public("Ticker", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        ticker = pd.DataFrame(res['result']).T
+        ticker = pd.DataFrame(res["result"]).T
 
         return ticker
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_ohlc_data(self, pair, interval=1, since=None, ascending=False):
         """Get ohlc data for a given pair.
 
@@ -572,20 +579,23 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('OHLC', data=data)
+        res = self.api.query_public("OHLC", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        pair = list(res['result'].keys())[0]
-        ohlc = pd.DataFrame(res['result'][pair])
-        last = res['result']['last']
+        pair = list(res["result"].keys())[0]
+        ohlc = pd.DataFrame(res["result"][pair])
+        last = res["result"]["last"]
 
         if ohlc.empty:
             return ohlc, last
@@ -593,23 +603,29 @@ class KrakenAPI(object):
         else:
             # set time, column names
             ohlc.columns = [
-                'time', 'open', 'high', 'low', 'close',
-                'vwap', 'volume', 'count',
+                "time",
+                "open",
+                "high",
+                "low",
+                "close",
+                "vwap",
+                "volume",
+                "count",
             ]
-            ohlc['dtime'] = pd.to_datetime(ohlc.time, unit='s')
-            ohlc.sort_values('dtime', ascending=ascending, inplace=True)
-            ohlc.set_index('dtime', inplace=True)
-            freq = str(interval) + 'T' if ascending else str(-interval) + 'T'
+            ohlc["dtime"] = pd.to_datetime(ohlc.time, unit="s")
+            ohlc.sort_values("dtime", ascending=ascending, inplace=True)
+            ohlc.set_index("dtime", inplace=True)
+            freq = str(interval) + "T" if ascending else str(-interval) + "T"
             ohlc.index.freq = freq
 
             # dtypes
-            for col in ['open', 'high', 'low', 'close', 'vwap', 'volume']:
+            for col in ["open", "high", "low", "close", "vwap", "volume"]:
                 ohlc.loc[:, col] = ohlc[col].astype(float)
 
             return ohlc, last
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_order_book(self, pair, count=100, ascending=False):
         """Get order book (market depth).
 
@@ -659,39 +675,42 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('Depth', data=data)
+        res = self.api.query_public("Depth", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        asks = pd.DataFrame(res['result'][pair]['asks'])
-        bids = pd.DataFrame(res['result'][pair]['bids'])
+        asks = pd.DataFrame(res["result"][pair]["asks"])
+        bids = pd.DataFrame(res["result"][pair]["bids"])
 
         # column names
-        cols = ['price', 'volume', 'time']
+        cols = ["price", "volume", "time"]
 
         if not asks.empty:
             asks.columns = cols
-            asks['dtime'] = pd.to_datetime(asks.time, unit='s')
-            asks.sort_values('dtime', ascending=ascending, inplace=True)
-            asks.set_index('dtime', inplace=True)
+            asks["dtime"] = pd.to_datetime(asks.time, unit="s")
+            asks.sort_values("dtime", ascending=ascending, inplace=True)
+            asks.set_index("dtime", inplace=True)
 
         if not bids.empty:
             bids.columns = cols
-            bids['dtime'] = pd.to_datetime(bids.time, unit='s')
-            bids.sort_values('dtime', ascending=ascending, inplace=True)
-            bids.set_index('dtime', inplace=True)
+            bids["dtime"] = pd.to_datetime(bids.time, unit="s")
+            bids.sort_values("dtime", ascending=ascending, inplace=True)
+            bids.set_index("dtime", inplace=True)
 
         return asks, bids
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_recent_trades(self, pair, since=None, ascending=False):
         """Get recent trades data.
 
@@ -741,46 +760,54 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('Trades', data=data)
+        res = self.api.query_public("Trades", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        pair = list(res['result'].keys())[0]
-        trades = pd.DataFrame(res['result'][pair])
+        pair = list(res["result"].keys())[0]
+        trades = pd.DataFrame(res["result"][pair])
 
         # last timestamp
-        last = int(res['result']['last'])
+        last = int(res["result"]["last"])
 
         if not trades.empty:
 
             trades.columns = [
-                'price', 'volume', 'time', 'buy_sell', 'market_limit', 'misc'
+                "price",
+                "volume",
+                "time",
+                "buy_sell",
+                "market_limit",
+                "misc",
             ]
-            trades.buy_sell.replace('b', 'buy', inplace=True)
-            trades.buy_sell.replace('s', 'sell', inplace=True)
-            trades.market_limit.replace('l', 'limit', inplace=True)
-            trades.market_limit.replace('m', 'market', inplace=True)
+            trades.buy_sell.replace("b", "buy", inplace=True)
+            trades.buy_sell.replace("s", "sell", inplace=True)
+            trades.market_limit.replace("l", "limit", inplace=True)
+            trades.market_limit.replace("m", "market", inplace=True)
 
             # time
-            trades['dtime'] = pd.to_datetime(trades.time, unit='s')
-            trades.sort_values('dtime', ascending=ascending, inplace=True)
-            trades.set_index('dtime', inplace=True)
+            trades["dtime"] = pd.to_datetime(trades.time, unit="s")
+            trades.sort_values("dtime", ascending=ascending, inplace=True)
+            trades.set_index("dtime", inplace=True)
 
             # dtypes
-            for col in ['price', 'volume']:
+            for col in ["price", "volume"]:
                 trades.loc[:, col] = trades[col].astype(float)
 
         return trades, last
 
     @crl_sleep
-    @callratelimiter('public')
+    @callratelimiter("public")
     def get_recent_spread_data(self, pair, since=None, ascending=False):
         """Get recent spread data.
 
@@ -834,41 +861,44 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_public('Spread', data=data)
+        res = self.api.query_public("Spread", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        pair = list(res['result'].keys())[0]
-        spread = pd.DataFrame(res['result'][pair])
+        pair = list(res["result"].keys())[0]
+        spread = pd.DataFrame(res["result"][pair])
 
         # last timestamp
-        last = int(res['result']['last'])
+        last = int(res["result"]["last"])
 
         if not spread.empty:
 
-            spread.columns = ['time', 'bid', 'ask']
+            spread.columns = ["time", "bid", "ask"]
 
             # time
-            spread['dtime'] = pd.to_datetime(spread.time, unit='s')
-            spread.sort_values('dtime', ascending=ascending, inplace=True)
-            spread.set_index('dtime', inplace=True)
+            spread["dtime"] = pd.to_datetime(spread.time, unit="s")
+            spread.sort_values("dtime", ascending=ascending, inplace=True)
+            spread.set_index("dtime", inplace=True)
 
             # spread
-            spread.loc[:, 'bid'] = spread.bid.astype(float)
-            spread.loc[:, 'ask'] = spread.ask.astype(float)
-            spread['spread'] = spread.ask - spread.bid
+            spread.loc[:, "bid"] = spread.bid.astype(float)
+            spread.loc[:, "ask"] = spread.ask.astype(float)
+            spread["spread"] = spread.ask - spread.bid
 
         return spread, last
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_account_balance(self, otp=None):
         """Get asset names and balance amount.
 
@@ -901,27 +931,30 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Balance', data=data)
+        res = self.api.query_private("Balance", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        balance = pd.DataFrame(index=['vol'], data=res['result']).T
+        balance = pd.DataFrame(index=["vol"], data=res["result"]).T
 
         if not balance.empty:
-            balance.loc[:, 'vol'] = balance.vol.astype(float)
+            balance.loc[:, "vol"] = balance.vol.astype(float)
 
         return balance
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_trade_balance(self, aclass='currency', asset='ZEUR', otp=None):
+    @callratelimiter("ledger/trade history")
+    def get_trade_balance(self, aclass="currency", asset="ZEUR", otp=None):
         """Get trade balance info.
 
         Return a ``pd.DataFrame`` of trade balance info.
@@ -971,18 +1004,21 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('TradeBalance', data=data)
+        res = self.api.query_private("TradeBalance", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        tradebalance = pd.DataFrame(index=[asset], data=res['result']).T
+        tradebalance = pd.DataFrame(index=[asset], data=res["result"]).T
 
         if not tradebalance.empty:
             tradebalance.loc[:, asset] = tradebalance[asset].astype(float)
@@ -990,7 +1026,7 @@ class KrakenAPI(object):
         return tradebalance
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_open_orders(self, trades=False, userref=None, otp=None):
         """
         Get open orders info.
@@ -1077,36 +1113,54 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('OpenOrders', data=data)
+        res = self.api.query_private("OpenOrders", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        openorders = pd.DataFrame(res['result']['open']).T
+        openorders = pd.DataFrame(res["result"]["open"]).T
 
         if not openorders.empty:
             descr = openorders.descr.apply(pd.Series)
-            descr.columns = ['descr_{}'.format(col) for col in descr.columns]
-            del openorders['descr']
+            descr.columns = ["descr_{}".format(col) for col in descr.columns]
+            del openorders["descr"]
             openorders = pd.concat((openorders, descr), axis=1)
-            for col in ['expiretm', 'opentm', 'starttm']:
+            for col in ["expiretm", "opentm", "starttm"]:
                 openorders.loc[:, col] = openorders[col].astype(int)
-            for col in ['cost', 'fee', 'price', 'vol', 'vol_exec',
-                        'descr_price', 'descr_price2']:
+            for col in [
+                "cost",
+                "fee",
+                "price",
+                "vol",
+                "vol_exec",
+                "descr_price",
+                "descr_price2",
+            ]:
                 openorders.loc[:, col] = openorders[col].astype(float)
 
         return openorders
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_closed_orders(self, trades=False, userref=None, start=None,
-                          end=None, ofs=None, closetime=None, otp=None):
+    @callratelimiter("ledger/trade history")
+    def get_closed_orders(
+        self,
+        trades=False,
+        userref=None,
+        start=None,
+        end=None,
+        ofs=None,
+        closetime=None,
+        otp=None,
+    ):
         """Get closed orders info.
 
         Return a ``pd.DataFrame`` of closed orders info.
@@ -1164,38 +1218,48 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('ClosedOrders', data=data)
+        res = self.api.query_private("ClosedOrders", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        closed = pd.DataFrame(res['result']['closed']).T
+        closed = pd.DataFrame(res["result"]["closed"]).T
 
         # count
-        count = res['result']['count']
+        count = res["result"]["count"]
 
         if not closed.empty:
 
             descr = closed.descr.apply(pd.Series)
-            descr.columns = ['descr_{}'.format(col) for col in descr.columns]
-            del closed['descr']
+            descr.columns = ["descr_{}".format(col) for col in descr.columns]
+            del closed["descr"]
             closed = pd.concat((closed, descr), axis=1)
-            for col in ['closetm', 'expiretm', 'opentm', 'starttm']:
+            for col in ["closetm", "expiretm", "opentm", "starttm"]:
                 closed.loc[:, col] = closed[col].astype(int)
-            for col in ['cost', 'fee', 'price', 'vol', 'vol_exec',
-                        'descr_price', 'descr_price2']:
+            for col in [
+                "cost",
+                "fee",
+                "price",
+                "vol",
+                "vol_exec",
+                "descr_price",
+                "descr_price2",
+            ]:
                 closed.loc[:, col] = closed[col].astype(float)
 
         return closed, count
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def query_orders_info(self, txid, trades=False, userref=None, otp=None):
         """Query orders info.
 
@@ -1235,38 +1299,56 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('QueryOrders', data=data)
+        res = self.api.query_private("QueryOrders", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        orders = pd.DataFrame(res['result']).T
+        orders = pd.DataFrame(res["result"]).T
 
         if not orders.empty:
 
             descr = orders.descr.apply(pd.Series)
-            descr.columns = ['descr_{}'.format(col) for col in descr.columns]
-            del orders['descr']
+            descr.columns = ["descr_{}".format(col) for col in descr.columns]
+            del orders["descr"]
             orders = pd.concat((orders, descr), axis=1)
-            for col in ['closetm', 'expiretm', 'opentm', 'starttm']:
+            for col in ["closetm", "expiretm", "opentm", "starttm"]:
                 if col in orders:
                     orders.loc[:, col] = orders[col].astype(float)
-            for col in ['cost', 'fee', 'price', 'vol', 'vol_exec',
-                        'descr_price', 'descr_price2']:
+            for col in [
+                "cost",
+                "fee",
+                "price",
+                "vol",
+                "vol_exec",
+                "descr_price",
+                "descr_price2",
+            ]:
                 orders.loc[:, col] = orders[col].astype(float)
 
         return orders
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_trades_history(self, type='all', trades=False, start=None,
-                           end=None, ofs=None, otp=None, ascending=False):
+    @callratelimiter("ledger/trade history")
+    def get_trades_history(
+        self,
+        type="all",
+        trades=False,
+        start=None,
+        end=None,
+        ofs=None,
+        otp=None,
+        ascending=False,
+    ):
         """Get trades history.
 
         Return a ``pd.DataFrame`` of the trade history.
@@ -1359,41 +1441,44 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('TradesHistory', data=data)
+        res = self.api.query_private("TradesHistory", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        trades = pd.DataFrame(res['result']['trades']).T
+        trades = pd.DataFrame(res["result"]["trades"]).T
 
         # count
-        count = res['result']['count']
+        count = res["result"]["count"]
 
         if not trades.empty:
 
-            trades.index.name = 'txid'
+            trades.index.name = "txid"
             trades.reset_index(inplace=True)
 
             # append datetime, sort by it
-            trades['dtime'] = pd.to_datetime(trades.time, unit='s')
-            trades.sort_values('dtime', ascending=ascending, inplace=True)
-            trades.set_index('dtime', inplace=True)
+            trades["dtime"] = pd.to_datetime(trades.time, unit="s")
+            trades.sort_values("dtime", ascending=ascending, inplace=True)
+            trades.set_index("dtime", inplace=True)
 
             # set dtypes
-            for col in ['cost', 'fee', 'margin', 'price', 'time', 'vol']:
+            for col in ["cost", "fee", "margin", "price", "time", "vol"]:
                 trades.loc[:, col] = trades[col].astype(float)
 
         return trades, count
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_deposit_methods(self, asset='XBT', otp=None):
+    @callratelimiter("ledger/trade history")
+    def get_deposit_methods(self, asset="XBT", otp=None):
         """Get methods available for depositing a particular asset.
 
         Return a ``pd.DataFrame`` of deposit methods info.
@@ -1430,24 +1515,27 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('DepositMethods', data=data)
+        res = self.api.query_private("DepositMethods", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        depositmethods = pd.DataFrame(index=[asset], data=res['result']).T
+        depositmethods = pd.DataFrame(index=[asset], data=res["result"]).T
 
         return depositmethods
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_deposit_addresses(self, asset='XBT', method='Bitcoin', new=False, otp=None):
+    @callratelimiter("ledger/trade history")
+    def get_deposit_addresses(self, asset="XBT", method="Bitcoin", new=False, otp=None):
         """Get (or generate a new) deposit addresses for a particular asset and method.
 
         Return a ``pd.DataFrame`` of deposit methods info.
@@ -1488,24 +1576,27 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('DepositAddresses', data=data)
+        res = self.api.query_private("DepositAddresses", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        depositaddresses = pd.DataFrame(index=[asset], data=res['result']).T
+        depositaddresses = pd.DataFrame(index=[asset], data=res["result"]).T
 
         return depositaddresses
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_deposit_status(self, asset='XBT', method=None, otp=None):
+    @callratelimiter("ledger/trade history")
+    def get_deposit_status(self, asset="XBT", method=None, otp=None):
         """Get information about recent deposits made.
 
         Return a ``pd.DataFrame`` of recent deposits.
@@ -1553,24 +1644,27 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('DepositStatus', data=data)
+        res = self.api.query_private("DepositStatus", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        depositstatus = pd.DataFrame(index=[asset], data=res['result']).T
+        depositstatus = pd.DataFrame(index=[asset], data=res["result"]).T
 
         return depositstatus
 
     @crl_sleep
-    @callratelimiter('other')
-    def get_withdrawal_information(self, key, asset='XBT', amount=0.0, otp=None):
+    @callratelimiter("other")
+    def get_withdrawal_information(self, key, asset="XBT", amount=0.0, otp=None):
         """Retrieve fee information about potential withdrawals for a particular asset, key and amount.
 
         Return a ``pd.DataFrame`` of withdrawal info.
@@ -1612,24 +1706,27 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items()
-                if arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('WithdrawInfo', data=data)
+        res = self.api.query_private("WithdrawInfo", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        withdrawal_info = pd.DataFrame(index=[asset], data=res['result']).T
+        withdrawal_info = pd.DataFrame(index=[asset], data=res["result"]).T
 
         return withdrawal_info
 
     @crl_sleep
-    @callratelimiter('other')
-    def withdraw_funds(self, key, asset='XBT', amount=0.0, otp=None):
+    @callratelimiter("other")
+    def withdraw_funds(self, key, asset="XBT", amount=0.0, otp=None):
         """Make a withdrawal request.
 
         Initialize a withdrawal and return the withdrawal refid.
@@ -1667,21 +1764,24 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items()
-                if arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Withdraw', data=data)
+        res = self.api.query_private("Withdraw", data=data)
 
         # check for error
         if len(res["error"]) > 0:
-            raise KrakenAPIError(res['error'])
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
 
     @crl_sleep
-    @callratelimiter('other')
-    def get_withdrawal_status(self, asset='XBT', method=None, otp=None):
+    @callratelimiter("other")
+    def get_withdrawal_status(self, asset="XBT", method=None, otp=None):
         """Retrieve information about recently requests withdrawals.
 
         Return a ``pd.DataFrame`` of recent withdrawals.
@@ -1732,24 +1832,27 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items()
-                if arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('WithdrawStatus', data=data)
+        res = self.api.query_private("WithdrawStatus", data=data)
 
         # check for error
         if len(res["error"]) > 0:
-            raise KrakenAPIError(res['error'])
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        withdrawalstatus = pd.DataFrame(index=[asset], data=res['result']).T
+        withdrawalstatus = pd.DataFrame(index=[asset], data=res["result"]).T
 
         return withdrawalstatus
 
     @crl_sleep
-    @callratelimiter('other')
-    def cancel_withdrawal(self, asset='XBT', refid=None, otp=None):
+    @callratelimiter("other")
+    def cancel_withdrawal(self, asset="XBT", refid=None, otp=None):
         """Cancel a recently requested withdrawal, if it has not already been successfully processed.
 
         Returns whether cancellation was successful or not.
@@ -1784,20 +1887,23 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items()
-                if arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('WithdrawCancel', data=data)
+        res = self.api.query_private("WithdrawCancel", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
+    @callratelimiter("ledger/trade history")
     def query_trades_info(self, txid, trades=False, otp=None, ascending=False):
         """Query trades info.
 
@@ -1839,37 +1945,40 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('QueryTrades', data=data)
+        res = self.api.query_private("QueryTrades", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        trades = pd.DataFrame(res['result']).T
+        trades = pd.DataFrame(res["result"]).T
 
         if not trades.empty:
 
-            trades.index.name = 'txid'
+            trades.index.name = "txid"
             trades.reset_index(inplace=True)
 
             # append datetime, sort by it
-            trades['dtime'] = pd.to_datetime(trades.time, unit='s')
-            trades.sort_values('dtime', ascending=ascending, inplace=True)
-            trades.set_index('dtime', inplace=True)
+            trades["dtime"] = pd.to_datetime(trades.time, unit="s")
+            trades.sort_values("dtime", ascending=ascending, inplace=True)
+            trades.set_index("dtime", inplace=True)
 
             # set dtypes
-            for col in ['cost', 'fee', 'margin', 'price', 'time', 'vol']:
+            for col in ["cost", "fee", "margin", "price", "time", "vol"]:
                 trades.loc[:, col] = trades[col].astype(float)
 
         return trades
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_open_positions(self, txid=None, docalcs=False, otp=None):
         """Get open positins info.
 
@@ -1929,25 +2038,37 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('OpenPositions', data=data)
+        res = self.api.query_private("OpenPositions", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        openpositions = res['result']
+        openpositions = res["result"]
 
         return openpositions
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
-    def get_ledgers_info(self, aclass=None, asset=None, type='all', start=None,
-                         end=None, ofs=None, otp=None, ascending=False):
+    @callratelimiter("ledger/trade history")
+    def get_ledgers_info(
+        self,
+        aclass=None,
+        asset=None,
+        type="all",
+        start=None,
+        end=None,
+        ofs=None,
+        otp=None,
+        ascending=False,
+    ):
         """Get ledgers info.
 
         Return a ``pd.DataFrame`` of ledgers info.
@@ -2016,41 +2137,44 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Ledgers', data=data)
+        res = self.api.query_private("Ledgers", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        ledgers = pd.DataFrame(res['result']['ledger']).T
+        ledgers = pd.DataFrame(res["result"]["ledger"]).T
 
         # count
-        count = res['result']['count']
+        count = res["result"]["count"]
 
         if not ledgers.empty:
 
-            ledgers.index.name = 'ledger_id'
+            ledgers.index.name = "ledger_id"
             ledgers.reset_index(inplace=True)
 
             # append datetime, sort by it
-            ledgers['dtime'] = pd.to_datetime(ledgers.time, unit='s')
-            ledgers.sort_values('dtime', ascending=ascending, inplace=True)
-            ledgers.set_index('dtime', inplace=True)
+            ledgers["dtime"] = pd.to_datetime(ledgers.time, unit="s")
+            ledgers.sort_values("dtime", ascending=ascending, inplace=True)
+            ledgers.set_index("dtime", inplace=True)
 
             # dtypes
-            for col in ['amount', 'balance', 'fee']:
+            for col in ["amount", "balance", "fee"]:
                 ledgers.loc[:, col] = ledgers[col].astype(float)
-            ledgers.loc[:, 'time'] = ledgers.time.astype(int)
+            ledgers.loc[:, "time"] = ledgers.time.astype(int)
 
         return ledgers, count
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
+    @callratelimiter("ledger/trade history")
     def query_ledgers(self, id, otp=None, ascending=False):
         """Query ledgers info.
 
@@ -2089,38 +2213,41 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('QueryLedgers', data=data)
+        res = self.api.query_private("QueryLedgers", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        ledgers = pd.DataFrame(res['result']).T
+        ledgers = pd.DataFrame(res["result"]).T
 
         if not ledgers.empty:
 
-            ledgers.index.name = 'ledger_id'
+            ledgers.index.name = "ledger_id"
             ledgers.reset_index(inplace=True)
 
             # append datetime, sort by it
-            ledgers['dtime'] = pd.to_datetime(ledgers.time, unit='s')
-            ledgers.sort_values('dtime', ascending=ascending, inplace=True)
-            ledgers.set_index('dtime', inplace=True)
+            ledgers["dtime"] = pd.to_datetime(ledgers.time, unit="s")
+            ledgers.sort_values("dtime", ascending=ascending, inplace=True)
+            ledgers.set_index("dtime", inplace=True)
 
             # dtypes
-            for col in ['amount', 'balance', 'fee']:
+            for col in ["amount", "balance", "fee"]:
                 ledgers.loc[:, col] = ledgers[col].astype(float)
-            ledgers.loc[:, 'time'] = ledgers.time.astype(int)
+            ledgers.loc[:, "time"] = ledgers.time.astype(int)
 
         return ledgers
 
     @crl_sleep
-    @callratelimiter('ledger/trade history')
+    @callratelimiter("ledger/trade history")
     def get_trade_volume(self, pair=None, fee_info=True, otp=None):
         """Get trade volume.
 
@@ -2191,45 +2318,63 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('TradeVolume', data=data)
+        res = self.api.query_private("TradeVolume", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        volume = float(res['result']['volume'])
+        volume = float(res["result"]["volume"])
 
         # fees
         try:
-            fees = pd.DataFrame(res['result']['fees'])
+            fees = pd.DataFrame(res["result"]["fees"])
             for col in fees.columns:
                 fees.loc[:, col] = fees[col].astype(float)
         except KeyError:
             fees = None
         try:
-            fees_maker = pd.DataFrame(res['result']['fees_maker'])
+            fees_maker = pd.DataFrame(res["result"]["fees_maker"])
             for col in fees_maker.columns:
                 fees_maker.loc[:, col] = fees_maker[col].astype(float)
         except KeyError:
             fees_maker = None
 
         # currency
-        currency = res['result']['currency']
+        currency = res["result"]["currency"]
 
         return currency, volume, fees, fees_maker
 
-    def add_standard_order(self, ordertype, type, pair, userref=None,
-                           volume=None, price=None, price2=None,
-                           trigger="last", leverage=None, oflags=None,
-                           timeinforce="GTC", starttm=0, expiretm=0,
-                           close_ordertype=None, close_price=None,
-                           close_price2=None, deadline=None, validate=True,
-                           otp=None):
+    def add_standard_order(
+        self,
+        ordertype,
+        type,
+        pair,
+        userref=None,
+        volume=None,
+        price=None,
+        price2=None,
+        # trigger="last",
+        leverage=None,
+        oflags=None,
+        # timeinforce="GTC",
+        starttm=0,
+        expiretm=0,
+        close_ordertype=None,
+        close_price=None,
+        close_price2=None,
+        deadline=None,
+        validate=True,
+        otp=None,
+    ):
         """Place a new order.
 
         Parameters
@@ -2390,8 +2535,11 @@ class KrakenAPI(object):
         # create data dictionary
         if validate is False:
             validate = None
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # This little hack fixes the problem with [ ]
         if "close_ordertype" in data:
@@ -2404,13 +2552,15 @@ class KrakenAPI(object):
             data["close[price2]"] = data.pop("close_price2")
 
         # query
-        res = self.api.query_private('AddOrder', data=data)
+        print(f"data = {data}")
+        res = self.api.query_private("AddOrder", data=data)
+        print(f"res = {res}")
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
 
     def cancel_open_order(self, txid, otp=None):
         """Cancel open order(s).
@@ -2448,17 +2598,61 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # submit
-        res = self.api.query_private('CancelOrder', data=data)
+        res = self.api.query_private("CancelOrder", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
+
+    def cancel_all_orders(self, otp=None):
+        """Cancel all open orders.
+
+        Parameters
+        ----------
+        otp : str
+            Two-factor password (if two-factor enabled, otherwise not required)
+
+        Returns
+        -------
+        count : int
+            Number of orders canceled.
+
+        Raises
+        ------
+        HTTPError
+            An HTTP error occurred.
+
+        KrakenAPIError
+            A kraken.com API error occurred.
+
+        """
+
+        # create data dictionary
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
+
+        # submit
+        print(f"data = {data}")
+        res = self.api.query_private("CancelAll", data=data)
+        print(f"res = {res}")
+
+        # check for error
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
+
+        return res["result"]
 
     def datetime_to_unixtime(self, dt):
         """Return unixtime for a given datetime.
@@ -2510,7 +2704,7 @@ class KrakenAPI(object):
         self.time_of_last_query = now
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_stakeable_assets(self, otp=None):
         """Get list of stakeable assets and staking details.
 
@@ -2553,23 +2747,26 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Staking/Assets', data=data)
+        res = self.api.query_private("Staking/Assets", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
-        assets = pd.json_normalize(data=res['result']).set_index('asset')
+        assets = pd.json_normalize(data=res["result"]).set_index("asset")
 
         return assets
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_pending_staking_transactions(self, otp=None):
         """Get list of pending staking transactions.
 
@@ -2610,28 +2807,29 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Staking/Pending', data=data)
+        res = self.api.query_private("Staking/Pending", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
         try:
-            transactions = pd.json_normalize(
-                data=res['result']
-            ).set_index('refid')
+            transactions = pd.json_normalize(data=res["result"]).set_index("refid")
         except KeyError:
             return None
 
         return transactions
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_staking_transactions(self, otp=None):
         """Returns the list of 1000 recent staking transactions from past
         90 days.
@@ -2673,28 +2871,29 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Staking/Transactions', data=data)
+        res = self.api.query_private("Staking/Transactions", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
         # create dataframe
         try:
-            transactions = pd.json_normalize(
-                data=res['result']
-            ).set_index('refid')
+            transactions = pd.json_normalize(data=res["result"]).set_index("refid")
         except KeyError:
             return None
 
         return transactions
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def stake_asset(self, asset, amount, method, otp=None):
         """Stake an asset from your spot wallet. This operation requires an
         API key with `Withdraw funds` permission.
@@ -2732,20 +2931,23 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Stake', data=data)
+        res = self.api.query_private("Stake", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def unstake_asset(self, asset, amount, otp=None):
         """Unstake an asset from your staking wallet. This operation requires
         an API key with `Withdraw funds` permission.
@@ -2781,20 +2983,23 @@ class KrakenAPI(object):
         """
 
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('Unstake', data=data)
+        res = self.api.query_private("Unstake", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
 
     @crl_sleep
-    @callratelimiter('other')
+    @callratelimiter("other")
     def get_websockets_token(self, opt=None):
         """An authentication token must be requested via this REST API endpoint
         in order to connect to and authenticate with our Websockets API. The
@@ -2832,14 +3037,17 @@ class KrakenAPI(object):
 
         """
         # create data dictionary
-        data = {arg: value for arg, value in locals().items() if
-                arg != 'self' and value is not None}
+        data = {
+            arg: value
+            for arg, value in locals().items()
+            if arg != "self" and value is not None
+        }
 
         # query
-        res = self.api.query_private('GetWebSocketsToken', data=data)
+        res = self.api.query_private("GetWebSocketsToken", data=data)
 
         # check for error
-        if len(res['error']) > 0:
-            raise KrakenAPIError(res['error'])
+        if len(res["error"]) > 0:
+            raise KrakenAPIError(res["error"])
 
-        return res['result']
+        return res["result"]
