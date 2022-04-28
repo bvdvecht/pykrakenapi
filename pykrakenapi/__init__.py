@@ -69,12 +69,11 @@ dtime
 
 from __future__ import absolute_import
 
-from pykrakenapi.pykrakenapi import KrakenAPI
+from pykrakenapi.pykrakenapi import KrakenAPI, KrakenAPIError
 
-__all__ = ['KrakenAPI']
-__version__ = '0.3.0'
+__all__ = ["KrakenAPI"]
+__version__ = "0.3.0"
 __author__ = "Dominik Traxl <dominik.traxl@posteo.org>"
 __copyright__ = "Copyright 2017 Dominik Traxl"
 __license__ = "GNU GPL"
 __URL__ = "https://github.com/dominiktraxl/pykrakenapi/"
-
